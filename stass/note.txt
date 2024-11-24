@@ -1,0 +1,8 @@
+1. Go to the Dropbox Developer Console (https://www.dropbox.com/developers)
+2. Create a new app
+3. Choose "Scoped access" API
+4. Give unique name
+5. Choose the type of access (Full Dropbox or App folder)
+6. Permissions -> files.metadata.write, files.content.write, files.content.read
+7. Generate an access token
+8. Replace 'YOUR_DROPBOX_ACCESS_TOKEN' in the code with your actual token

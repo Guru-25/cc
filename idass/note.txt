@@ -1,0 +1,21 @@
+npm create vite@latest my-auth -- --template react
+cd my-auth
+npm install
+npm install @auth0/auth0-react
+
+1. Go to auth0.com and create an account or sign in
+2. Create a new Application > Choose "Single Page Application"
+3. In Settings, note down:
+Domain
+Client ID
+
+4. Under "Allowed Callback URLs" add: http://localhost:5173/
+5. Under "Allowed Logout URLs" add: http://localhost:5173/
+6. Under "Allowed Web Origins" add: http://localhost:5173/
+7. Save changes
+
+src/main.jsx
+src/App.jsx
+src/App.css
+
+npm run dev

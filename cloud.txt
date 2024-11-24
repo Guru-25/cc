@@ -1,0 +1,349 @@
+sudo rm -f /var/lib/dpkg/lock
+sudo rm -f /var/lib/dpkg/lock-frontend
+sudo rm -f /var/cache/apt/archives/lock
+
+-----
+
+MPICH:
+1.
+program:
+#include<stdio.h>
+#include<mpi.h>
+int main(int argv,char ** argc){
+  int rank,size;
+  {
+    MPI_Init(NULL,NULL);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    MPI_Finalize();
+    printf("HELLO WORLD FROM %d OUT OF TOTAL PROCESDS %d\n",rank,size);
+  }
+  printf("program ends");
+  return 0;
+}
+
+COMPILE: mpicc hello.c -o hello
+RUN:mpirun -np -4 ./hello
+
+-----
+2.
+nano pi.c
+sudo apt-get install mpich
+mpicc -o pi pi.c
+mpirun -np 4 ./mpi_pi
+
+-----
+
+OPENMPI:
+1.
+sudo apt-get install libopenmpi-dev
+sudo apt-get install openmpi-bin
+
+#include <stdio.h>
+#include <omp.h>
+int main() {
+  int sum=0;
+  int i;
+  #pragma omp parallel
+  {
+    int localsum=0;
+    #pragma omp for
+    for(i=0;i<10;i++) {
+      localsum+=i;
+    }
+    #pragma omp critical
+    sum+=localsum;
+  }
+  }
+  printf("%d",sum);
+  return 0;
+}
+COMPILE: gcc -fopenmp hello_world.c -o hello_world.out
+RUN: ./hello_world.out
+
+-----
+2.
+sudo apt install curl
+curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
+tgpt --provider openai --url "https://guru-25-llm.hf.space/chat/completions" --key "guru" --model "gpt-4o" "give a openmpi code for sum program and how to run it in ubuntu"
+
+nano sum.c
+sudo apt install libopenmpi-dev openmpi-bin
+mpicc sum.c -o sum
+mpirun -np 4 ./sum_openmpi
+
+-----
+
+HADOOP:
+sudo apt update
+sudo apt install openjdk-8-jdk -y
+sudo rm /var/lib/dpkg/lock-frontend
+sudo rm /var/lib/dpkg/lock
+java -version; javac -version
+sudo apt install openssh-server openssh-client -y
+sudo adduser hdoop
+sudo usermod -aG sudo hdoop
+su - hdoop
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 0600 ~/.ssh/authorized_keys
+ssh localhost
+// wget https://dlcdn.apache.org/hadoop/common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
+cp /home/tce/Downloads/hadoop-3.2.1.tar.gz .
+tar xzf hadoop-3.2.1.tar.gz
+nano .bashrc
+#Hadoop Related Options
+export HADOOP_HOME=/home/hdoop/hadoop-3.2.1
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib/native"
+
+source ~/.bashrc
+nano $HADOOP_HOME/etc/hadoop/hadoop-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+which javac
+readlink -f /usr/bin/javac
+nano $HADOOP_HOME/etc/hadoop/core-site.xml
+<configuration>
+<property>
+  <name>hadoop.tmp.dir</name>
+  <value>/home/hdoop/tmpdata</value>
+</property>
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://127.0.0.1:9000</value>
+</property>
+</configuration>
+
+sudo nano $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+<configuration>
+<property>
+  <name>dfs.data.dir</name>
+  <value>/home/hdoop/dfsdata/namenode</value>
+</property>
+<property>
+  <name>dfs.data.dir</name>
+  <value>/home/hdoop/dfsdata/datanode</value>
+</property>
+<property>
+  <name>dfs.replication</name>
+  <value>1</value>
+</property>
+</configuration>
+
+sudo nano $HADOOP_HOME/etc/hadoop/mapred-site.xml
+<configuration>
+<property>
+  <name>mapreduce.framework.name</name>
+  <value>yarn</value>
+</property>
+</configuration>
+
+nano $HADOOP_HOME/etc/hadoop/yarn-site.xml
+<configuration>
+<property>
+  <name>yarn.nodemanager.aux-services</name>
+  <value>mapreduce_shuffle</value>
+</property>
+<property>
+  <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+  <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+</property>
+<property>
+  <name>yarn.resourcemanager.hostname</name>
+  <value>127.0.0.1</value>
+</property>
+<property>
+  <name>yarn.acl.enable</name>
+  <value>0</value>
+</property>
+<property>
+  <name>yarn.nodemanager.env-whitelist</name>   
+  <value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PERPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME</value>
+</property>
+</configuration>
+
+hdfs namenode -format
+./hadoop-3.2.1/sbin/start-dfs.sh
+./hadoop-3.2.1/sbin/start-yarn.sh
+jps
+
+http://localhost:9870
+http://localhost:9864
+http://localhost:8088
+
+nano HelloWorld.java
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class HelloWorld {
+  
+    // Mapper class
+    public static class HelloWorldMapper extends Mapper<Object, Text, Text, IntWritable> {
+        private final static IntWritable one = new IntWritable(1);
+        private Text word = new Text();
+
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            word.set("Hello World");
+            context.write(word, one);
+        }
+    }
+
+    // Reducer class
+    public static class HelloWorldReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            context.write(key, new IntWritable(sum));
+        }
+    }
+
+    // Driver class
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = Job.getInstance(conf, "hello world");
+        job.setJarByClass(HelloWorld.class);
+        job.setMapperClass(HelloWorldMapper.class);
+        job.setCombinerClass(HelloWorldReducer.class);
+        job.setReducerClass(HelloWorldReducer.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
+
+javac -source 1.8 -target 1.8 -classpath `hadoop classpath` -d . HelloWorld.java
+jar cf helloworld.jar HelloWorld*.class
+hdfs dfs -mkdir -p /user/input
+echo "Hello World" > input.txt
+hdfs dfs -put input.txt /user/input/
+hadoop jar helloworld.jar HelloWorld /user/input /user/output
+hdfs dfs -cat /user/output/part-r-00000
+
+-----
+
+DOCKER:
+1.
+sudo apt update
+docker --version
+sudo usermod -aG docker $USER
+sudo systemctl start docker
+sudo systemctl status docker
+mkdir test
+cd test
+touch readme.md
+touch Dockerfile
+gedit Dockerfile
+FROM ubuntu
+CMD ["echo","Hello I am a Docker"]
+
+sudo docker build -t mydocker .
+sudo docker images
+sudo docker run mydocker
+
+https://hub.docker.com/
+sudo chown -R $(whoami) ~/.docker
+sudo docker login
+
+sudo docker tag mydocker:latest guru368/cloudd
+sudo docker images
+sudo docker push guru368/cloudd:latest
+sudo docker pull guru368/cloudd:latest
+sudo docker pull nginx:latest
+sudo docker run -d --name mynginx nginx:latest
+sudo docker images
+sudo docker ps
+sudo docker ps -a
+sudo docker rmi nginx:latest
+sudo docker stop f1c51f8fcf06
+sudo docker rm f1c51f8fcf06
+sudo docker rmi nginx:latest
+sudo docker images
+sudo docker run -d --name cloudd guru368/cloudd
+sudo docker logs cloudd
+sudo docker info
+sudo docker run -it ubuntu bash
+sudo docker ps
+sudo docker exec -it 1715ff1beeb5 ls /
+sudo docker stop 1715ff1beeb5
+sudo docker kill 2248015fca31
+sudo docker stop 1715ff1beeb5
+sudo docker ps -a
+sudo docker rm 1715ff1beeb5
+
+-----
+2.
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+
+-----
+3.
+1. Version and Information
+docker --version : Displays the Docker version.
+docker info : Displays detailed information about Docker.
+2. Image Management
+docker search <image_name> : Searches for specific images on Docker Hub.
+docker images : Lists all Docker images on the local system.
+docker rmi <image_id> : Removes one or more Docker images.
+docker rm images : Removes Docker images.
+3. Network and Volume Management
+docker network ls : Lists available Docker networks.
+docker volume create : Creates a new Docker volume.
+docker volume ls : Lists all Docker volumes.
+4. Container Management
+docker container ps : Lists running containers.
+docker rm <container_id> -f : Removes a container by ID.
+5. System Maintenance
+docker system prune : Removes unused Docker resources.
+Additional Commands
+docker node ls : Lists nodes in a Docker swarm.
+
+-----
+
+SPARK:
+java -version
+sudo rm /var/lib/dpkg/lock-frontend
+sudo rm /var/lib/dpkg/lock
+sudo apt-get install default-jdk
+sudo apt-get install scala
+scala -version
+cd /home/tce/Downloads/
+sudo tar xvf spark-3.5.3-bin-hadoop3.tgz
+sudo su -
+cd /home/tce/Downloads/
+mv spark-3.5.3-bin-hadoop3 /usr/local/spark
+exit
+nano ~/.bashrc
+export PATH=$PATH:/usr/local/spark/bin
+
+source ~/.bashrc
+nano input.txt
+guru
+raja
+spark-shell
+val inputfile = sc.textFile("input.txt")
+val counts = inputfile.flatMap(line => line.split(" ")).map(word => (word, 1)).reduceByKey(_ + _)
+counts.saveAsTextFile("output")
+cd output
+cat part-00000

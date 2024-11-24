@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropbox File Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropbox.js/10.34.0/Dropbox-sdk.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .file-list {
+            margin-top: 20px;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dropbox File Manager</h1>
+        
+        <!-- Upload Section -->
+        <div>
+            <h2>Upload File</h2>
+            <input type="file" id="fileInput">
+            <button onclick="uploadFile()">Upload</button>
+            <div id="uploadStatus"></div>
+        </div>
+
+        <!-- Download Section -->
+        <div>
+            <h2>Download File</h2>
+            <input type="text" id="fileName" placeholder="Enter file name">
+            <button onclick="downloadFile()">Download</button>
+            <div id="downloadStatus"></div>
+        </div>
+
+        <!-- File List Section -->
+        <div class="file-list">
+            <h2>Files in Dropbox</h2>
+            <button onclick="listFiles()">Refresh File List</button>
+            <div id="fileList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your Dropbox API access token
+        const ACCESS_TOKEN = 'sl.CBVQl3sfAUZp0J-vGdtywFSg4KuJXdUkCIV9uYH9LvOuGQKcHsHyV9I2kGpgD1GDzdm2ygGKJgZl6xUuSQX5R3sv5p9yu8vi7VuwZJbYPhGcq7qeoaMV8n4IXQtPbe9WrTCTJeHdJbIc';
+        const dbx = new Dropbox.Dropbox({ accessToken: ACCESS_TOKEN });
+
+        // Upload file
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            if (!fileInput.files.length) {
+                statusDiv.innerHTML = '<p class="error">Please select a file</p>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            try {
+                const response = await dbx.filesUpload({
+                    path: '/' + file.name,
+                    contents: file
+                });
+                statusDiv.innerHTML = '<p class="success">File uploaded successfully!</p>';
+                listFiles(); // Refresh file list
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Upload error: ${error}</p>`;
+            }
+        }
+
+        // Download file
+        async function downloadFile() {
+            const fileName = document.getElementById('fileName').value;
+            const statusDiv = document.getElementById('downloadStatus');
+
+            if (!fileName) {
+                statusDiv.innerHTML = '<p class="error">Please enter a file name</p>';
+                return;
+            }
+
+            try {
+                const response = await dbx.filesDownload({ path: '/' + fileName });
+                const blob = new Blob([response.result.fileBlob]);
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                statusDiv.innerHTML = '<p class="success">File downloaded successfully!</p>';
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Download error: ${error}</p>`;
+            }
+        }
+
+        // List files
+        async function listFiles() {
+            const listDiv = document.getElementById('fileList');
+            
+            try {
+                const response = await dbx.filesListFolder({ path: '' });
+                const files = response.result.entries;
+                
+                if (files.length === 0) {
+                    listDiv.innerHTML = '<p>No files found</p>';
+                    return;
+                }
+
+                let fileListHTML = '';
+                files.forEach(file => {
+                    fileListHTML += `
+                        <div class="file-item">
+                            <span>${file.name}</span>
+                            <button onclick="downloadFile('${file.name}')">Download</button>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = fileListHTML;
+            } catch (error) {
+                listDiv.innerHTML = `<p class="error">Error listing files: ${error}</p>`;
+            }
+        }
+
+        // Initial file list load
+        listFiles();
+    </script>
+</body>
+</html>

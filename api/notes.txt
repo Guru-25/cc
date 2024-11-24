@@ -1,0 +1,24 @@
+npm install express
+node server.js
+
+GET
+http://localhost:3000/items
+
+POST
+http://localhost:3000/items
+body -> raw -> json
+{
+  "name": "Apple",
+  "quantity": 10
+}
+
+PUT
+http://localhost:3000/items/1
+{
+  "name": "Banana",
+  "quantity": 15
+}
+
+DELETE
+http://localhost:3000/items/1
+

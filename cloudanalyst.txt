@@ -1,0 +1,4 @@
+https://sourceforge.net/projects/cloudanalystnetbeans/
+https://netbeans.apache.org/front/main/download/nb17/     // (under installers and packages,first link)
+Open project->cloud analyst,run (error comes also give ok)
+configure simulations and run simulations

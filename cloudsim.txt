@@ -1,0 +1,12 @@
+https://github.com/Cloudslab/cloudsim/archive/refs/tags/5.0.zip
+https://dlcdn.apache.org//commons/math/binaries/commons-math4-4.0-beta1-bin.zip
+
+https://www.eclipse.org/downloads/download.php?file=/oomph/epp/2024-09/R/eclipse-inst-jre-win64.exe
+Open eclipse,file ->new -> java pro->proj name --> cloudsim
+disable default location and provide the path of cloudsim 5.0 download loc
+click finish
+
+Right click the cloudsim->properties->java build path->libraries->click module path->add external JAR
+ in that (extract the math download)
+Click apply
+Go back to eclipse,open cloudsim(expand it)-->open cloudsim-examples-->org.cloudbus-->cloud example-->double click it(code will be visible) and run it 

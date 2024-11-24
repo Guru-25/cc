@@ -1,0 +1,7 @@
+npm install -g firebase-tools
+firebase logout
+firebase login
+firebase init
+hosting
+
+firebase deploy
