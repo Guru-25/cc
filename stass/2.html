@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropbox File Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dropbox/10.34.0/Dropbox-sdk.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2196F3;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .file-list {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 10px auto;
+            max-width: 400px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .file-item .buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .error {
+            color: #dc3545;
+            margin: 10px auto;
+            text-align: center;
+        }
+        .success {
+            color: #28a745;
+            margin: 10px auto;
+            text-align: center;
+        }
+        button {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1976D2;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        input[type="file"],
+        input[type="text"] {
+            margin: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 80%;
+            max-width: 300px;
+        }
+        #fileList {
+            margin-top: 20px;
+        }
+        .status-container {
+            min-height: 30px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dropbox File Manager</h1>
+        
+        <!-- Upload Section -->
+        <div class="section">
+            <h2>Upload File</h2>
+            <input type="file" id="fileInput">
+            <button onclick="uploadFile()">Upload</button>
+            <div id="uploadStatus" class="status-container"></div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="section">
+            <h2>Download File</h2>
+            <input type="text" id="fileName" placeholder="Enter file name">
+            <button onclick="downloadFile()">Download</button>
+            <div id="downloadStatus" class="status-container"></div>
+        </div>
+
+        <!-- File List Section -->
+        <div class="section file-list">
+            <h2>Files in Dropbox</h2>
+            <button onclick="listFiles()">Refresh File List</button>
+            <div id="fileList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Replace with your Dropbox API access token
+        const ACCESS_TOKEN = 'YOUR_DROPBOX_ACCESS_TOKEN';
+        const dbx = new Dropbox.Dropbox({ accessToken: ACCESS_TOKEN });
+
+        // Upload file
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            if (!fileInput.files.length) {
+                statusDiv.innerHTML = '<p class="error">Please select a file</p>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            try {
+                const response = await dbx.filesUpload({
+                    path: '/' + file.name,
+                    contents: file
+                });
+                statusDiv.innerHTML = '<p class="success">File uploaded successfully!</p>';
+                listFiles(); // Refresh file list
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Upload error: ${error}</p>`;
+            }
+        }
+
+        // Download file
+        async function downloadFile(fileName) {
+            const fileNameInput = fileName || document.getElementById('fileName').value;
+            const statusDiv = document.getElementById('downloadStatus');
+
+            if (!fileNameInput) {
+                statusDiv.innerHTML = '<p class="error">Please enter a file name</p>';
+                return;
+            }
+
+            try {
+                const response = await dbx.filesDownload({ path: '/' + fileNameInput });
+                const blob = new Blob([response.result.fileBlob]);
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileNameInput;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                statusDiv.innerHTML = '<p class="success">File downloaded successfully!</p>';
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Download error: ${error}</p>`;
+            }
+        }
+
+        // Delete file
+        async function deleteFile(fileName) {
+            const statusDiv = document.getElementById('downloadStatus');
+            
+            try {
+                await dbx.filesDeleteV2({
+                    path: '/' + fileName
+                });
+                statusDiv.innerHTML = '<p class="success">File deleted successfully!</p>';
+                listFiles(); // Refresh file list
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Delete error: ${error}</p>`;
+            }
+        }
+
+        // List files
+        async function listFiles() {
+            const listDiv = document.getElementById('fileList');
+            
+            try {
+                const response = await dbx.filesListFolder({ path: '' });
+                const files = response.result.entries;
+                
+                if (files.length === 0) {
+                    listDiv.innerHTML = '<p>No files found</p>';
+                    return;
+                }
+
+                let fileListHTML = '';
+                files.forEach(file => {
+                    fileListHTML += `
+                        <div class="file-item">
+                            <span>${file.name}</span>
+                            <div class="buttons">
+                                <button onclick="downloadFile('${file.name}')">Download</button>
+                                <button class="delete-btn" onclick="deleteFile('${file.name}')">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listDiv.innerHTML = fileListHTML;
+            } catch (error) {
+                listDiv.innerHTML = `<p class="error">Error listing files: ${error}</p>`;
+            }
+        }
+
+        // Initial file list load
+        listFiles();
+    </script>
+</body>
+</html>
