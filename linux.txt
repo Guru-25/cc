@@ -63,10 +63,6 @@ RUN: ./hello_world.out
 
 -----
 2.
-sudo apt install curl
-curl -sSL https://raw.githubusercontent.com/aandrew-me/tgpt/main/install | bash -s /usr/local/bin
-tgpt --provider openai --url "https://guru-25-llm.hf.space/chat/completions" --key "guru" --model "gpt-4o" "give a openmpi code for sum program and how to run it in ubuntu"
-
 nano sum.c
 sudo apt install libopenmpi-dev openmpi-bin
 mpicc sum.c -o sum
